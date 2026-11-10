@@ -65,7 +65,8 @@ attach/detach/associate/dissociate/reorder/import plus every bulk action. It res
 model from the action record, action model or Livewire table model, and never breaks the panel action.
 
 It does **not** cover: raw SQL, `saveQuietly()`, `withoutEvents()`, or non-Filament pivot writes in app
-code. Those need an explicit flush (see the core skill/guardrails).
+code. `belongsToMany` pivots on cacheable models are covered by the core package's relation wrapper;
+`morphToMany` and raw pivot writes still need an explicit flush (see the core skill/guardrails).
 
 ## Tenancy
 
