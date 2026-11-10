@@ -1,6 +1,23 @@
-# OoMyCache Filament Bridge
+<p align="center">
+  <img src="https://cdn.jsdelivr.net/gh/OsamaElnagar/oomycache-filament@main/art/plugin-image.jpg" alt="OoMyCache Filament Bridge — Query Cache studio, tenant-safe cache keys and O(1) invalidation" width="100%" class="filament-hidden">
+</p>
 
-<img src="https://cdn.jsdelivr.net/gh/OsamaElnagar/oomycache-filament@main/art/plugin-image.jpg" alt="OoMyCache Filament Bridge — Query Cache studio, tenant-safe cache keys and O(1) invalidation" width="100%" class="filament-hidden">
+<h1 align="center">OoMyCache Filament Bridge</h1>
+
+<p align="center">
+  <strong>Query Cache studio, tenant-safe cache keys, and event-bypass invalidation for Filament 5.</strong><br>
+  Optional bridge for the framework-agnostic <a href="https://packagist.org/packages/osamaelnagar/oomycache">osamaelnagar/oomycache</a> package.
+</p>
+
+<p align="center">
+  <a href="https://packagist.org/packages/osamaelnagar/oomycache-filament"><img src="https://img.shields.io/packagist/v/osamaelnagar/oomycache-filament?style=flat-square&color=6f7dff" alt="Latest version"></a>
+  <a href="https://packagist.org/packages/osamaelnagar/oomycache-filament"><img src="https://img.shields.io/packagist/dt/osamaelnagar/oomycache-filament?style=flat-square&color=14c9de" alt="Total downloads"></a>
+  <a href="https://packagist.org/packages/osamaelnagar/oomycache-filament"><img src="https://img.shields.io/badge/Filament-v5-b6aaff?style=flat-square" alt="Filament v5"></a>
+  <a href="https://packagist.org/packages/osamaelnagar/oomycache-filament"><img src="https://img.shields.io/badge/PHP-8.3%2B-777bb4?style=flat-square" alt="PHP 8.3+"></a>
+  <a href="https://github.com/OsamaElnagar/oomycache-filament/stargazers"><img src="https://img.shields.io/github/stars/OsamaElnagar/oomycache-filament?style=flat-square&color=ff9bd6" alt="GitHub stars"></a>
+  <a href="https://github.com/OsamaElnagar/oomycache-filament/actions/workflows/tests.yml"><img src="https://github.com/OsamaElnagar/oomycache-filament/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-22d3a7?style=flat-square" alt="MIT license"></a>
+</p>
 
 Filament 5 bridge for [`osamaelnagar/oomycache`](https://github.com/osamaelnagar/oomycache): a Query
 Cache studio for your panel, tenant-safe cache keys, and invalidation for Filament actions that bypass
@@ -49,6 +66,14 @@ public function panel(Panel $panel): Panel
 
 Then publish the OoMyCache configuration (in the core package) and add the `HasQueryCache` trait to
 your models.
+
+## For AI agents (Laravel Boost)
+
+The bridge ships a Laravel Boost skill at
+[`resources/boost/skills/oomycache-filament/SKILL.md`](resources/boost/skills/oomycache-filament/SKILL.md)
+covering plugin registration, the studio page, the deny-by-default `can_purge` gate, tenant resolver
+behaviour, and what Filament actions the invalidator covers. Package maintenance conventions live in
+[`AGENTS.md`](AGENTS.md).
 
 ## Requirements
 
