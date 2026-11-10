@@ -1,6 +1,10 @@
 # OoMyCache Filament Bridge
 
-Filament 5 bridge for [`osamaelnagar/oomycache`](https://github.com/osamaelnagar/oomycache).
+<img src="https://cdn.jsdelivr.net/gh/OsamaElnagar/oomycache-filament@main/art/plugin-image.jpg" alt="OoMyCache Filament Bridge — Query Cache studio, tenant-safe cache keys and O(1) invalidation" width="100%">
+
+Filament 5 bridge for [`osamaelnagar/oomycache`](https://github.com/osamaelnagar/oomycache): a Query
+Cache studio for your panel, tenant-safe cache keys, and invalidation for Filament actions that bypass
+Eloquent model events.
 
 ## What it adds
 
@@ -12,6 +16,14 @@ Filament 5 bridge for [`osamaelnagar/oomycache`](https://github.com/osamaelnagar
 - **Event-bypass invalidation** — listens to Filament `ActionCalled` and flushes the affected models
   for attach/detach/associate/dissociate/reorder/import and all bulk actions, which write through
   query builders / pivot tables without firing Eloquent model events.
+
+## Screenshots
+
+<img src="https://cdn.jsdelivr.net/gh/OsamaElnagar/oomycache-filament@main/art/screenshots/query-cache-studio-light.jpg" alt="OoMyCache Query Cache studio in light mode: cache status, hit/miss stats and cacheable models" width="100%">
+
+<img src="https://cdn.jsdelivr.net/gh/OsamaElnagar/oomycache-filament@main/art/screenshots/query-cache-studio-dark.jpg" alt="OoMyCache Query Cache studio in dark mode" width="100%">
+
+<img src="https://cdn.jsdelivr.net/gh/OsamaElnagar/oomycache-filament@main/art/screenshots/products-light.jpg" alt="A Filament products table served from the OoMyCache query cache with zero ERP queries on a warm render" width="100%">
 
 ## Installation
 
