@@ -16,7 +16,7 @@ Filament 5 bridge for [`osamaelnagar/oomycache`](https://github.com/osamaelnagar
 ## Installation
 
 ```bash
-composer require osamaelnagar/oomycache osamaelnagar/oomycache-filament
+composer require osamaelnagar/oomycache:^0.1.0-alpha.1 osamaelnagar/oomycache-filament:^0.1.0-alpha.1
 ```
 
 Register the plugin on the panel(s) where the cache studio should appear:
