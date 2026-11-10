@@ -293,6 +293,7 @@ class QueryCacheStudio extends Page
             $rows[] = ['label' => 'Hits (window)', 'value' => (string) ($snapshot['hits'] ?? 0), 'badge' => 'success'];
             $rows[] = ['label' => 'Misses (window)', 'value' => (string) ($snapshot['misses'] ?? 0), 'badge' => 'warning'];
             $rows[] = ['label' => 'Bypasses (window)', 'value' => (string) ($snapshot['bypasses'] ?? 0), 'badge' => 'gray'];
+            $rows[] = ['label' => 'Empty-result bypasses', 'value' => (string) ($snapshot['empty_bypasses'] ?? 0), 'badge' => 'gray'];
             $rows[] = ['label' => 'Invalidations (window)', 'value' => (string) ($snapshot['invalidations'] ?? 0), 'badge' => 'danger'];
             $rows[] = ['label' => 'Clears (window)', 'value' => (string) ($snapshot['clears'] ?? 0), 'badge' => 'danger'];
         }
