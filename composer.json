@@ -1,0 +1,91 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "osamaelnagar/oomycache-filament",
+    "description": "Filament 5 bridge for OoMyCache: tenant-safe cache keys, Query Cache studio page and event-bypass invalidation.",
+    "keywords": [
+        "laravel",
+        "filament",
+        "cache",
+        "eloquent",
+        "query-cache",
+        "oomycache"
+    ],
+    "homepage": "https://github.com/osamaelnagar/oomycache-filament",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Osama Mohammed Elnagar",
+            "email": "osamaelngar98@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../OoMyCache",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "filament/filament": "^5.0",
+        "livewire/livewire": "^4.0",
+        "illuminate/support": "^12.0||^13.0",
+        "osamaelnagar/oomycache": "dev-main || dev-master || ^0.1"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.9",
+        "laravel/pint": "^1.29",
+        "orchestra/testbench": "^10.0||^11.0",
+        "pestphp/pest": "^4.6||^5.0",
+        "pestphp/pest-plugin-laravel": "^4.1||^5.0",
+        "phpstan/extension-installer": "^1.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Oomycache\\Filament\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Oomycache\\Filament\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "lint": [
+            "vendor/bin/pint --parallel"
+        ],
+        "lint:check": [
+            "vendor/bin/pint --parallel --test"
+        ],
+        "analyse": [
+            "vendor/bin/phpstan analyse --memory-limit=1G"
+        ],
+        "test:unit": [
+            "vendor/bin/pest"
+        ],
+        "test": [
+            "@analyse",
+            "@lint:check",
+            "@test:unit"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Oomycache\\Filament\\OomycacheFilamentServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
