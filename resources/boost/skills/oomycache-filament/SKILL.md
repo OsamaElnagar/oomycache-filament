@@ -40,7 +40,7 @@ Then add `HasQueryCache` to the Eloquent models you want cached (in the app, not
 
 ## Studio page
 
-`/admin/query-cache` shows store status, cacheable models + version tokens, hit/miss/invalidation
+`{panel-path}/query-cache` (e.g. `/admin/query-cache`, or `/query-cache` when the panel path is `''`) shows store status, cacheable models + version tokens, hit/miss/invalidation
 counters (when stats are enabled), selective invalidation and a global purge.
 
 - Page access: authenticated panel users; optionally restrict with
@@ -74,15 +74,13 @@ own resolver that fails closed outside a panel.
 ## Verify
 
 ```bash
-php artisan test tests/Feature/QueryCacheStudioTest.php \
-  tests/Feature/QueryCacheTenancyBridgeTest.php \
-  tests/Feature/QueryCacheRelationManagerInvalidationTest.php \
-  tests/Feature/QueryCacheTenantPanelTest.php --compact
-
+cd packages/OoMyCacheFilament && composer test   # bridge package lane
 php artisan oomycache:doctor
 ```
 
-For the package itself: `composer test` from `packages/OoMyCacheFilament`.
+App-level dogfood tests live in the OoMyCache repository's dogfood app, not in this package; run them
+there when validating end-to-end Filament behaviour (studio page, relation-manager pivot actions,
+tenant panel isolation).
 
 ## Anti-patterns
 
