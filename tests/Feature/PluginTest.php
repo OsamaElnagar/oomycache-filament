@@ -39,6 +39,18 @@ test('the plugin registers the query cache studio page on a panel', function ():
         ->and($panel->getPages())->toContain(QueryCacheStudio::class);
 });
 
+test('the studio navigation is configurable per panel', function (): void {
+    config([
+        'oomycache.filament.dashboard.navigation_label' => 'Cache Studio',
+        'oomycache.filament.dashboard.navigation_group' => 'Settings',
+        'oomycache.filament.dashboard.navigation_sort' => 60,
+    ]);
+
+    expect(QueryCacheStudio::getNavigationLabel())->toBe('Cache Studio')
+        ->and(QueryCacheStudio::getNavigationGroup())->toBe('Settings')
+        ->and(QueryCacheStudio::getNavigationSort())->toBe(60);
+});
+
 test('the invalidator registration is idempotent and registers a listener', function (): void {
     $before = count(Event::getListeners(ActionCalled::class));
 

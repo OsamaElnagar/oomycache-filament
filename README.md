@@ -30,9 +30,11 @@ Eloquent model events.
 
 - **Tenant/panel-safe cache keys** — binds a Filament-aware `TenantResolver`: the current panel id is
   part of every key; if a panel has tenancy and no tenant can be resolved, caching **fails closed**.
-- **Query Cache studio page** — `Query Cache` navigation page with store status, cacheable models and
+- **Query Cache studio page** — configurable `Query Cache` navigation page with store status, cacheable models and
   their version tokens, live stats counters (when enabled), selective model invalidation and a global
-  purge action. Filament-components-only markup, so custom panel themes apply unchanged.
+  purge action. Filament-components-only markup, so custom panel themes apply unchanged. Set
+  `oomycache.filament.dashboard.navigation_label`, `.navigation_group` and `.navigation_sort` to fit
+  the host panel's navigation; the group defaults to the panel's default group.
 - **Event-bypass invalidation** — listens to Filament `ActionCalled` and flushes the affected models
   for attach/detach/associate/dissociate/reorder/import and all bulk actions, which write through
   query builders / pivot tables without firing Eloquent model events.

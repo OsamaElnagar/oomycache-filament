@@ -45,6 +45,9 @@ counters (when stats are enabled), selective invalidation and a global purge.
 
 - Page access: authenticated panel users; optionally restrict with
   `oomycache.filament.dashboard.can_view` = Gate name.
+- Navigation placement is configurable: `oomycache.filament.dashboard.navigation_label`,
+  `.navigation_group` and `.navigation_sort`. The group defaults to the panel default when null;
+  do not rely on the page forcing a specific group.
 - **Destructive actions are deny-by-default.** Set
   `oomycache.filament.dashboard.can_purge` = Gate name and define that gate in the app:
 

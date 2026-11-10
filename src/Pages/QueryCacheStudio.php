@@ -34,13 +34,7 @@ class QueryCacheStudio extends Page
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bolt';
 
-    protected static ?string $navigationLabel = 'Query Cache';
-
     protected static ?string $title = 'Query Cache';
-
-    protected static string|UnitEnum|null $navigationGroup = 'ERP';
-
-    protected static ?int $navigationSort = 95;
 
     protected string $view = 'oomycache-filament::pages.query-cache-studio';
 
@@ -53,6 +47,25 @@ class QueryCacheStudio extends Page
      * @var array<string, array{table: string, token: string, ttl: int, enabled: bool}>|null
      */
     private ?array $modelsMemo = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return (string) config('oomycache.filament.dashboard.navigation_label', 'Query Cache');
+    }
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        $group = config('oomycache.filament.dashboard.navigation_group');
+
+        return is_string($group) && $group !== '' ? $group : null;
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('oomycache.filament.dashboard.navigation_sort');
+
+        return is_numeric($sort) ? (int) $sort : null;
+    }
 
     public static function canAccess(): bool
     {
