@@ -6,6 +6,9 @@ Filament 5 bridge for [`osamaelnagar/oomycache`](https://github.com/osamaelnagar
 Cache studio for your panel, tenant-safe cache keys, and invalidation for Filament actions that bypass
 Eloquent model events.
 
+> OoMyCache core is **framework-agnostic** and works in any Laravel app. This bridge is optional —
+> install it only when your app uses Filament.
+
 ## What it adds
 
 - **Tenant/panel-safe cache keys** — binds a Filament-aware `TenantResolver`: the current panel id is
