@@ -18,6 +18,14 @@ test('the plugin exposes the oomycache identifier', function (): void {
     expect(OomycachePlugin::make()->getId())->toBe('oomycache');
 });
 
+test('make() resolves the plugin through the container', function (): void {
+    $instance = new OomycachePlugin;
+
+    app()->instance(OomycachePlugin::class, $instance);
+
+    expect(OomycachePlugin::make())->toBe($instance);
+});
+
 test('the service provider binds the Filament-aware tenant resolver when Filament is present', function (): void {
     expect(app(TenantResolver::class))->toBeInstanceOf(FilamentTenantResolver::class);
 });

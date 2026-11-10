@@ -5,6 +5,7 @@
     "keywords": [
         "laravel",
         "filament",
+        "filament-plugin",
         "cache",
         "eloquent",
         "query-cache",
