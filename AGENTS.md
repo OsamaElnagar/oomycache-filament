@@ -31,6 +31,12 @@ composer test:unit
 `resources/boost/skills/oomycache-filament/SKILL.md` is shipped to Laravel Boost agents. Update it when
 public behavior or installation changes.
 
+## Policies
+
+See `SECURITY.md` for private vulnerability reporting and `CONTRIBUTING.md` for bridge contribution and
+release constraints. The core production runbook lives in the core package
+(`docs/implementation/production-runbook.md`).
+
 ## Do not
 
 - Add a hard Filament dependency to the core package.
