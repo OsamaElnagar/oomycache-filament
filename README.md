@@ -86,6 +86,14 @@ behaviour, and what Filament actions the invalidator covers. Package maintenance
 
 ## Security
 
+See [`SECURITY.md`](SECURITY.md) for supported versions and private vulnerability reporting. Do not
+open public issues for security reports.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, tests, release rules and bridge-specific
+constraints.
+
 - The studio page is only accessible to authenticated panel users; set
   `oomycache.filament.dashboard.can_view` to a Gate name to restrict it further.
 - **Destructive actions are deny-by-default.** Set `oomycache.filament.dashboard.can_purge` to a
