@@ -16,13 +16,13 @@ the panel integration. The bridge is optional; the core package works without Fi
 ## Compatibility
 
 - PHP 8.3+, Laravel 12/13, Filament 5, Livewire 4
-- Alpha tags: install with an explicit alpha constraint
+- Stable releases: v0.1.0+; the core and bridge are installed together
 - Requires the core package `osamaelnagar/oomycache`
 
 ## Install
 
 ```bash
-composer require osamaelnagar/oomycache:^0.1.0-alpha.1 osamaelnagar/oomycache-filament:^0.1.0-alpha.1
+composer require osamaelnagar/oomycache osamaelnagar/oomycache-filament
 ```
 
 Register the plugin on the panel(s) where the Query Cache studio should appear:

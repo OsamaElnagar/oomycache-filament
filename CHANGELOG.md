@@ -1,12 +1,32 @@
 # Release Notes
 
-## Unreleased
+## 0.1.0 - 2026-11-11
 
-- Extracted from the OoMyCache dogfood app into a standalone Filament 5 bridge package.
-- `OomycachePlugin` (panel-scoped registration: `->plugin(OomycachePlugin::make())`).
-- `Query Cache` studio page: store status, cacheable models + version tokens, live stats counters
-  (when enabled), selective model invalidation and a global purge action.
-- Filament-aware `TenantResolver`: panel id in every cache key; panel tenancy without a resolved
-  tenant fails closed.
-- `FilamentCacheInvalidator`: `ActionCalled` invalidation for attach/detach/associate/dissociate/
-  reorder/import and all bulk actions (query-builder/pivot writes that bypass Eloquent events).
+First stable release of the OoMyCache Filament 5 bridge.
+
+### Added
+
+- `OomycachePlugin` for panel-scoped registration.
+- Query Cache studio page (`{panel-path}/query-cache`) with store status, cacheable models and
+  version tokens, live hit/miss/bypass/invalidation/clear counters (when stats are enabled),
+  selective model invalidation and a global purge.
+- Configurable studio navigation label/group/sort; no hardcoded navigation group.
+- Filament-aware tenant resolver: panel id in every key; active tenancy without a resolved tenant
+  fails closed.
+- `FilamentCacheInvalidator` for attach/detach/associate/dissociate/reorder/import and bulk actions
+  that bypass Eloquent model events.
+- Deny-by-default `oomycache.purge` Gate for destructive studio actions, plus optional
+  `oomycache.view` page Gate.
+- Companion Boost skill and agent guidance for installing the bridge safely.
+
+### Security
+
+- Destructive actions are hidden and refuse to run unless the operator Gate is configured.
+- Tenant/panel keys are composed by the core resolver; unresolved panel tenancy is never cached.
+- Bridge tests cover plugin registration, navigation config, invalidator behavior, tenant segments
+  and fail-closed tenancy.
+
+### Requirements
+
+- PHP 8.3+, Laravel 12/13, Filament 5, Livewire 4.
+- `osamaelnagar/oomycache` `^0.1`.
