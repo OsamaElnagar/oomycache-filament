@@ -85,6 +85,16 @@ being tagged; both packages' `LICENSE.md` exist; the workflow YAML parses (see t
 
 ---
 
+## Published tags are immutable
+
+Once a tag has been pushed to GitHub and indexed by Packagist, never move or force-push it. Packagist
+rejects a stable version whose source/dist reference changes, and downstream users may already have
+the old commit. If a tag was moved by mistake, restore it to the published reference and ship the fix
+as a new patch version. The bridge `v0.1.0` incident (moved while fixing the stable core pin) is the
+canonical example: `v0.1.0` was restored to its published commit and `v0.1.1` carried the fix.
+
+---
+
 ## 4. Tag and publish
 
 ```bash
