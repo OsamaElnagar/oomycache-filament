@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.1.1 - 2026-11-11
+
+### Fixed
+
+- Stable releases now pin the core package to the tagged constraint `^0.1` instead of also allowing
+  `dev-main`/`dev-master`. This is required for a resolvable standalone stable bridge release.
+- Local path-repository development declares the core package version as `0.1.0` so CI and the
+  release test gate resolve the same pinned constraint.
+
 ## 0.1.0 - 2026-11-11
 
 First stable release of the OoMyCache Filament 5 bridge.
