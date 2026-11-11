@@ -1,5 +1,11 @@
 # Release Notes
 
+## 0.1.2 - 2026-11-11
+
+### Added
+
+- `SECURITY.md` and `CONTRIBUTING.md`, plus README/AGENTS policy links.
+
 ## 0.1.1 - 2026-11-11
 
 ### Fixed
