@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.1.3 - 2026-11-11
+
+### Fixed
+
+- The bridge no longer flushes standard per-record `attach`/`detach`/`delete`/`force-delete`/`restore`
+  actions for cacheable models. The core model events and caching pivot relations already invalidate
+  those writes, so the bridge flush produced duplicate audit/stats notifications. Event-bypassing
+  actions (`reorder`, `import`, bulk actions, non-cacheable models) still flush through the bridge.
+
 ## 0.1.2 - 2026-11-11
 
 ### Added

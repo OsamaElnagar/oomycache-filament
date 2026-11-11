@@ -50,6 +50,21 @@ final class FilamentCacheInvalidator
         'restore',
     ];
 
+    /**
+     * Per-record actions that the core model/pivot events already invalidate for
+     * cacheable models. Flushing them again from the bridge would duplicate the
+     * audit/stats notification for one logical write.
+     *
+     * @var list<string>
+     */
+    private const CORE_HANDLED_ACTION_NAMES = [
+        'attach',
+        'detach',
+        'delete',
+        'force-delete',
+        'restore',
+    ];
+
     private const REGISTERED_KEY = 'oomycache.filament-invalidator.registered';
 
     public static function register(): void
@@ -95,7 +110,12 @@ final class FilamentCacheInvalidator
                 return;
             }
 
-            foreach ($this->resolveModels($action) as $modelClass) {
+            $models = array_values(array_filter(
+                $this->resolveModels($action),
+                fn (string $modelClass): bool => ! $this->coreHandles($action, $modelClass),
+            ));
+
+            foreach ($models as $modelClass) {
                 $this->flushModel($modelClass);
             }
         } catch (Throwable $exception) {
@@ -103,6 +123,20 @@ final class FilamentCacheInvalidator
                 report($exception);
             }
         }
+    }
+
+    /**
+     * Cacheable models already invalidate on their own Eloquent events and on
+     * caching belongsToMany/morphToMany pivot operations. Only fall back to a
+     * bridge flush for actions the core cannot see.
+     */
+    private function coreHandles(Action $action, string $modelClass): bool
+    {
+        if (! in_array($action->getName(), self::CORE_HANDLED_ACTION_NAMES, true)) {
+            return false;
+        }
+
+        return $this->isCacheableModel($modelClass);
     }
 
     private function shouldFlush(Action $action): bool
@@ -167,17 +201,23 @@ final class FilamentCacheInvalidator
 
     private function flushModel(string $modelClass): void
     {
-        if (! class_exists($modelClass)) {
+        if (! $this->isCacheableModel($modelClass)) {
             return;
+        }
+
+        /** @var class-string<Model> $modelClass */
+        app(Oomycache::class)->flush([$modelClass]);
+    }
+
+    private function isCacheableModel(string $modelClass): bool
+    {
+        if (! class_exists($modelClass)) {
+            return false;
         }
 
         $usesTrait = in_array(HasQueryCache::class, class_uses_recursive($modelClass), true);
         $implementsContract = is_subclass_of($modelClass, QueryCacheable::class);
 
-        if (! $usesTrait && ! $implementsContract) {
-            return;
-        }
-
-        app(Oomycache::class)->flush([$modelClass]);
+        return $usesTrait || $implementsContract;
     }
 }

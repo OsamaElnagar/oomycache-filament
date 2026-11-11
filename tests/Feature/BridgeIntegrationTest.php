@@ -55,11 +55,31 @@ it('flushes the affected model for an event-bypassing Filament action', function
     $connection = $record->getConnection()->getName();
     $before = $versions->get('bridge_cacheable_records', $connection);
 
+    // reorder is not handled by core model events; the bridge must flush it.
     app(FilamentCacheInvalidator::class)->handle(
-        Action::make('attach')->record($record),
+        Action::make('reorder')->record($record),
     );
 
     expect($versions->get('bridge_cacheable_records', $connection))->not->toBe($before);
+});
+
+it('does not duplicate a core-handled delete for a cacheable model', function (): void {
+    Schema::create('bridge_cacheable_records', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+    });
+
+    $record = BridgeCacheableRecord::query()->create(['name' => 'Delete record']);
+
+    $versions = app(VersionStore::class);
+    $connection = $record->getConnection()->getName();
+    $before = $versions->get('bridge_cacheable_records', $connection);
+
+    app(FilamentCacheInvalidator::class)->handle(
+        Action::make('delete')->record($record),
+    );
+
+    expect($versions->get('bridge_cacheable_records', $connection))->toBe($before);
 });
 
 it('does not flush for an ordinary action name', function (): void {

@@ -36,8 +36,10 @@ Eloquent model events.
   `oomycache.filament.dashboard.navigation_label`, `.navigation_group` and `.navigation_sort` to fit
   the host panel's navigation; the group defaults to the panel's default group.
 - **Event-bypass invalidation** — listens to Filament `ActionCalled` and flushes the affected models
-  for attach/detach/associate/dissociate/reorder/import and all bulk actions, which write through
-  query builders / pivot tables without firing Eloquent model events.
+  for associate/dissociate/reorder/import, bulk actions and non-cacheable models, which write through
+  query builders / pivot tables without firing Eloquent model events. Standard per-record
+  attach/detach/delete/force-delete/restore actions on cacheable models defer to core events so one
+  logical write produces one invalidation.
 
 ## Screenshots
 

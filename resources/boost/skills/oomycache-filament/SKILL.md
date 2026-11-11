@@ -61,8 +61,9 @@ Without the Gate the invalidate/clear buttons are hidden and the action closures
 ## Invalidation coverage
 
 The bridge listens to Filament `ActionCalled` and flushes affected models for
-attach/detach/associate/dissociate/reorder/import plus every bulk action. It resolves the affected
-model from the action record, action model or Livewire table model, and never breaks the panel action.
+associate/dissociate/reorder/import, bulk actions and event-bypassing actions on non-cacheable models.
+Standard per-record attach/detach/delete/force-delete/restore actions on cacheable models defer to
+the core events/pivot relations, so one logical write produces one audit/stats invalidation.
 
 It does **not** cover: raw SQL, `saveQuietly()`, `withoutEvents()`, or non-Filament pivot writes in app
 code. `belongsToMany` pivots on cacheable models are covered by the core package's relation wrapper;
