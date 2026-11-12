@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.1.4 - 2026-11-12
+
+### Changed
+
+- Published `composer.json` no longer declares the local `../OoMyCache` path repository. The bridge
+  resolves the core from Packagist like any consumer, which also lets dependency updaters work.
+- GitHub Actions are pinned to immutable commit SHAs and a weekly Dependabot updater with a 7-day
+  update cooldown is configured.
+
 ## 0.1.3 - 2026-11-11
 
 ### Fixed
