@@ -26,6 +26,22 @@ Eloquent model events.
 > OoMyCache core is **framework-agnostic** and works in any Laravel app. This bridge is optional —
 > install it only when your app uses Filament.
 
+## Measured impact
+
+**77% fewer SQL statements · 99%+ cache hit rate** across 40 authenticated loads of 10 heavy Filament
+pages in a production-like 62-model ERP.
+
+| Surface | SQL before | SQL after | Reduction |
+| --- | ---: | ---: | ---: |
+| 10 heavy pages (4 loads each) | 791 | **184** | **77%** |
+| Journal-entries list, eager lines | 3 / load | **0 / load** | **100%** |
+| Audit-log list (12.6k rows) | 2 / load | **0 / load** | **100%** |
+
+Warm renders execute no application queries for cached data, and a UI delete/force-delete/restore writes
+exactly one invalidation and one audit row. Filament page wall time is Livewire-render-bound; compare SQL
+and DB time rather than total milliseconds. The core [benchmark report](https://github.com/OsamaElnagar/oomycache/blob/main/docs/implementation/benchmark-report.md)
+documents the full method and limitations.
+
 ## What it adds
 
 - **Tenant/panel-safe cache keys** — binds a Filament-aware `TenantResolver`: the current panel id is
@@ -76,8 +92,7 @@ your models.
 The bridge ships a Laravel Boost skill at
 [`resources/boost/skills/oomycache-filament/SKILL.md`](resources/boost/skills/oomycache-filament/SKILL.md)
 covering plugin registration, the studio page, the deny-by-default `can_purge` gate, tenant resolver
-behaviour, and what Filament actions the invalidator covers. Package maintenance conventions live in
-[`AGENTS.md`](AGENTS.md).
+behaviour, and what Filament actions the invalidator covers.
 
 ## Requirements
 
