@@ -39,9 +39,9 @@ cd /tmp/oomycache-filament && git init -b main && git add . \
 
 After the split: submit the repo at <https://packagist.org/packages/submit>, enable the Packagist
 webhook, add branch protection on `main`, and copy the core `.github/release.yml` (note categories) +
-`update-changelog` workflow into this repository. Composer assumes the core lives at `../OoMyCache` via
-a path repository for local development; the release workflow clones
-`https://github.com/osamaelnagar/oomycache.git` next to the checkout, so no sibling clone is needed in CI.
+`update-changelog` workflow into this repository. The published bridge `composer.json` intentionally
+has **no path repository**; core is resolved from Packagist. For local core development, add a
+temporary path repository to the consuming app's root composer.json, never to the bridge manifest.
 
 ---
 
@@ -49,9 +49,8 @@ a path repository for local development; the release workflow clones
 
 | Core release state | bridge `require` for `osamaelnagar/oomycache` |
 | --- | --- |
-| No core tag yet | `"dev-main \|\| dev-master \|\| ^0.1"` (current) |
-| Prerelease core tag (e.g. `v0.1.0-alpha.1`) | keep the `dev-*` pins for the bridge alpha run, or pin the prerelease explicitly: `^0.1.0-alpha.1` — a bare `^0.1` does **not** match prerelease versions |
-| First stable core tag (`v0.1.0`) | `"^0.1"` (remove `dev-main`/`dev-master`) |
+| Stable core (current) | `"^0.1"` |
+| Prerelease core tag (e.g. `v0.1.0-alpha.1`) | pin the prerelease explicitly: `^0.1.0-alpha.1` — a bare `^0.1` does **not** match prerelease versions |
 | Core `v1.0.0` | `"^1.0"` (bump deliberately with the bridge's own major) |
 
 Release order is always **core → wait for Packagist → bridge**. A bridge tag whose core pin cannot
@@ -82,16 +81,6 @@ php artisan test tests/Feature/QueryCacheStudioTest.php \
 Checklist: `CHANGELOG.md` has an accurate `## Unreleased` section (no edit needed when present — the
 workflow accepts `## Unreleased` and `## [X.Y.Z]`); `README.md` install instructions match the versions
 being tagged; both packages' `LICENSE.md` exist; the workflow YAML parses (see the core checklist §11).
-
----
-
-## Published tags are immutable
-
-Once a tag has been pushed to GitHub and indexed by Packagist, never move or force-push it. Packagist
-rejects a stable version whose source/dist reference changes, and downstream users may already have
-the old commit. If a tag was moved by mistake, restore it to the published reference and ship the fix
-as a new patch version. The bridge `v0.1.0` incident (moved while fixing the stable core pin) is the
-canonical example: `v0.1.0` was restored to its published commit and `v0.1.1` carried the fix.
 
 ---
 

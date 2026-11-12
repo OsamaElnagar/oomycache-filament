@@ -1,20 +1,12 @@
 # Release workflow for the standalone `osamaelnagar/oomycache-filament` repository.
 #
-# IMPORTANT — repository layout assumption: this bridge currently lives inside
-# the OoMyCache dogfood app at `packages/OoMyCacheFilament` and is NOT its own
-# git repository yet, so GitHub cannot execute this file today. Once the
-# directory is split out and pushed to
-# https://github.com/osamaelnagar/oomycache-filament, pushing a `v*` tag runs:
+# Pushing a `v*` tag runs:
 #
 #   validate (tag ↔ composer.json ↔ core pin ↔ CHANGELOG.md) -> composer test -> GitHub Release
 #
-# The companion requires the core package (`osamaelnagar/oomycache`). Until the
-# core is split and tagged, composer.json pins `dev-main || dev-master || ^0.1`;
-# the test job therefore clones the core repository next to the checkout (the
-# path repository in composer.json points at `../OoMyCache`) and checks out the
-# newest core tag when one exists. See `RELEASING.md` and the core
-# `docs/implementation/release-checklist.md` for the pinning rules and the
-# split commands.
+# Core is resolved from Packagist (`osamaelnagar/oomycache:^0.1`); the published
+# composer.json intentionally contains no path repository. See `RELEASING.md`
+# for the stable core pin and release rules.
 
 name: release
 
