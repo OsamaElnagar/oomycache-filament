@@ -20,18 +20,6 @@
             "role": "Developer"
         }
     ],
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../OoMyCache",
-            "options": {
-                "symlink": true,
-                "versions": {
-                    "osamaelnagar/oomycache": "0.1.0"
-                }
-            }
-        }
-    ],
     "require": {
         "php": "^8.3",
         "filament/filament": "^5.0",

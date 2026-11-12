@@ -45,7 +45,6 @@ concurrency:
 env:
   PACKAGE_NAME: osamaelnagar/oomycache-filament
   EXPECTED_HOMEPAGE: https://github.com/osamaelnagar/oomycache-filament
-  CORE_REPOSITORY: https://github.com/osamaelnagar/oomycache.git
   CORE_PACKAGE: osamaelnagar/oomycache
   MIN_PHP: '8.3'
   COMPOSER_PROCESS_TIMEOUT: '1200'
@@ -277,24 +276,6 @@ jobs:
         with:
           ref: ${{ needs.validate.outputs.tag }}
           fetch-depth: 1
-
-      # composer.json uses a path repository (`../OoMyCache`) plus a `dev-main`
-      # requirement while the core is unreleased. In the standalone bridge repo
-      # the core is cloned next to the checkout and pinned to the newest core tag
-      # when one exists (a tagged core satisfies both `dev-main || ^0.1` setups).
-      - name: Checkout OoMyCache core (path dependency)
-        run: |
-          set -euo pipefail
-          git clone "$CORE_REPOSITORY" ../OoMyCache
-          cd ../OoMyCache
-          LATEST_CORE_TAG="$(git tag --list 'v*' --sort=-v:refname | head -n 1 || true)"
-          if [ -n "$LATEST_CORE_TAG" ]; then
-            echo "Using latest core tag [$LATEST_CORE_TAG] for the path dependency."
-            git checkout --detach "$LATEST_CORE_TAG"
-          else
-            echo "No core tags exist yet; using the default branch ($(git rev-parse --abbrev-ref HEAD))."
-          fi
-          git rev-parse --short HEAD
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
