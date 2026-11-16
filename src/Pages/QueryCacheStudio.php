@@ -6,12 +6,17 @@ namespace Oomycache\Filament\Pages;
 
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Oomycache\Filament\Support\HasCachedNavigationBadge;
 use Oomycache\Oomycache\Cache\QueryCacheEngine;
 use Oomycache\Oomycache\Contracts\VersionStore;
 use Oomycache\Oomycache\Oomycache;
@@ -30,6 +35,9 @@ use UnitEnum;
  */
 class QueryCacheStudio extends Page
 {
+    /** Exposes cachedNavigationBadgeCount() to pages/resources that subclass the studio. */
+    use HasCachedNavigationBadge;
+
     protected static ?string $slug = 'query-cache';
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bolt';
@@ -37,6 +45,15 @@ class QueryCacheStudio extends Page
     protected static ?string $title = 'Query Cache';
 
     protected string $view = 'oomycache-filament::pages.query-cache-studio';
+
+    /**
+     * Hit-rate badge colour thresholds (percent).
+     */
+    private const HIT_RATE_SUCCESS_THRESHOLD = 90;
+
+    private const HIT_RATE_WARNING_THRESHOLD = 70;
+
+    private const NAVIGATION_BADGE_MEMO_KEY = 'oomycache.filament.navigation-badge.';
 
     /**
      * @var array<string, mixed>|null
@@ -67,16 +84,54 @@ class QueryCacheStudio extends Page
         return is_numeric($sort) ? (int) $sort : null;
     }
 
+    /**
+     * Optional, config-driven navigation badge. Modes: `off` (default),
+     * `hit-rate`, `invalidations` and `models`. All values come from the
+     * already memoised status/model discovery — a badge never queries the DB.
+     */
+    public static function getNavigationBadge(): ?string
+    {
+        return self::navigationBadge()['badge'];
+    }
+
+    /**
+     * @return string|array<string>|null
+     */
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return self::navigationBadge()['color'];
+    }
+
+    public static function getNavigationBadgeTooltip(): string|Htmlable|null
+    {
+        return self::navigationBadge()['tooltip'];
+    }
+
+    /**
+     * Forget the per-request badge snapshot (called after a purge so the
+     * navigation refreshes without rebuilding the page).
+     */
+    public static function flushNavigationBadgeMemo(): void
+    {
+        app()->forgetInstance(self::NAVIGATION_BADGE_MEMO_KEY.static::class);
+    }
+
+    /**
+     * Page access follows the current Filament panel's auth guard, not
+     * Laravel's default guard, so multi-guard panels decide correctly.
+     */
     public static function canAccess(): bool
     {
-        if (! auth()->check()) {
+        $user = self::currentPanelUser();
+
+        if ($user === null) {
             return false;
         }
 
         $gate = config('oomycache.filament.dashboard.can_view');
 
         if (is_string($gate) && $gate !== '' && Gate::has($gate)) {
-            return Gate::allows($gate);
+            return Gate::forUser($user)->allows($gate);
         }
 
         return true;
@@ -91,7 +146,9 @@ class QueryCacheStudio extends Page
      */
     public static function canPurge(): bool
     {
-        if (! auth()->check()) {
+        $user = self::currentPanelUser();
+
+        if ($user === null) {
             return false;
         }
 
@@ -101,7 +158,8 @@ class QueryCacheStudio extends Page
             return false;
         }
 
-        return Gate::has($gate) && Gate::allows($gate);
+        // Deny-by-default is intentional: a missing gate never grants purge.
+        return Gate::has($gate) && Gate::forUser($user)->allows($gate);
     }
 
     /**
@@ -381,5 +439,166 @@ class QueryCacheStudio extends Page
     {
         $this->statusMemo = null;
         $this->modelsMemo = null;
+        static::flushNavigationBadgeMemo();
+    }
+
+    /**
+     * Badge values are computed once per class and kept on the application
+     * container, so getNavigationBadge()/Color()/Tooltip() share one snapshot.
+     *
+     * @return array{badge: ?string, color: string|array<string>|null, tooltip: ?string}
+     */
+    private static function navigationBadge(): array
+    {
+        $mode = config('oomycache.filament.dashboard.navigation_badge', 'off');
+
+        if (! is_string($mode) || $mode === 'off') {
+            return self::emptyBadge();
+        }
+
+        $key = self::NAVIGATION_BADGE_MEMO_KEY.static::class;
+
+        if (app()->bound($key)) {
+            /** @var array{badge: ?string, color: string|array<string>|null, tooltip: ?string} $memo */
+            $memo = app($key);
+
+            return $memo;
+        }
+
+        /** @var static $page */
+        $page = app(static::class);
+
+        $badge = match ($mode) {
+            'hit-rate' => self::hitRateBadge($page),
+            'invalidations' => self::invalidationsBadge($page),
+            'models' => self::modelsBadge($page),
+            default => self::emptyBadge(),
+        };
+
+        app()->instance($key, $badge);
+
+        return $badge;
+    }
+
+    /**
+     * @return array{badge: ?string, color: string|array<string>|null, tooltip: ?string}
+     */
+    private static function emptyBadge(): array
+    {
+        return ['badge' => null, 'color' => null, 'tooltip' => null];
+    }
+
+    /**
+     * @return array{badge: ?string, color: string|array<string>|null, tooltip: ?string}
+     */
+    private static function hitRateBadge(self $page): array
+    {
+        $stats = $page->status()['stats'] ?? null;
+
+        if (! is_array($stats)) {
+            return self::emptyBadge();
+        }
+
+        $hits = max(0, (int) ($stats['hits'] ?? 0));
+        $misses = max(0, (int) ($stats['misses'] ?? 0));
+        $total = $hits + $misses;
+
+        if ($total === 0) {
+            return [
+                'badge' => null,
+                'color' => null,
+                'tooltip' => 'OoMyCache hit rate — no samples in the current window.',
+            ];
+        }
+
+        $rate = (int) round($hits * 100 / $total);
+        $color = $rate >= self::HIT_RATE_SUCCESS_THRESHOLD
+            ? 'success'
+            : ($rate >= self::HIT_RATE_WARNING_THRESHOLD ? 'warning' : 'danger');
+        $window = (int) ($stats['window_seconds'] ?? 0);
+
+        return [
+            'badge' => $rate.'%',
+            'color' => $color,
+            'tooltip' => 'OoMyCache hit rate: '.$hits.' hits / '.$misses.' misses'
+                .($window > 0 ? ' (last '.$window.'s).' : '.'),
+        ];
+    }
+
+    /**
+     * @return array{badge: ?string, color: string|array<string>|null, tooltip: ?string}
+     */
+    private static function invalidationsBadge(self $page): array
+    {
+        $stats = $page->status()['stats'] ?? null;
+        $count = is_array($stats) ? max(0, (int) ($stats['invalidations'] ?? 0)) : 0;
+
+        return [
+            'badge' => (string) $count,
+            'color' => 'info',
+            'tooltip' => 'OoMyCache invalidations in the current stats window.',
+        ];
+    }
+
+    /**
+     * @return array{badge: ?string, color: string|array<string>|null, tooltip: ?string}
+     */
+    private static function modelsBadge(self $page): array
+    {
+        return [
+            'badge' => (string) count($page->cacheableModels()),
+            'color' => 'gray',
+            'tooltip' => 'Discovered OoMyCache cacheable models.',
+        ];
+    }
+
+    /**
+     * Resolve the authenticated user from the current Filament panel's guard.
+     * Falls back to Laravel's default guard when Filament has no guard to
+     * report; an unusable guard denies access instead of guessing.
+     */
+    private static function currentPanelUser(): ?Authenticatable
+    {
+        $guardName = self::authGuard();
+
+        try {
+            /** @var Guard $guard */
+            $guard = auth()->guard($guardName);
+
+            if (! $guard->check()) {
+                return null;
+            }
+
+            $user = $guard->user();
+
+            return $user instanceof Authenticatable ? $user : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private static function authGuard(): ?string
+    {
+        if (! class_exists(Filament::class)) {
+            return null;
+        }
+
+        try {
+            $guard = Filament::getAuthGuard();
+
+            if ($guard !== '') {
+                return $guard;
+            }
+
+            $panelGuard = Filament::getCurrentPanel()?->getAuthGuard();
+
+            if (is_string($panelGuard) && $panelGuard !== '') {
+                return $panelGuard;
+            }
+        } catch (Throwable) {
+            // Filament is not booted: use Laravel's default guard.
+        }
+
+        return null;
     }
 }

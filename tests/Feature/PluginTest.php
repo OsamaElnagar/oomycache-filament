@@ -9,6 +9,7 @@ use Oomycache\Filament\OomycachePlugin;
 use Oomycache\Filament\Pages\QueryCacheStudio;
 use Oomycache\Filament\Support\FilamentCacheInvalidator;
 use Oomycache\Filament\Support\FilamentTenantResolver;
+use Oomycache\Filament\Tests\Fixtures\BadgeStudio;
 use Oomycache\Filament\Tests\TestCase;
 use Oomycache\Oomycache\Contracts\TenantResolver;
 
@@ -37,6 +38,25 @@ test('the plugin registers the query cache studio page on a panel', function ():
 
     expect($panel->hasPlugin('oomycache'))->toBeTrue()
         ->and($panel->getPages())->toContain(QueryCacheStudio::class);
+});
+
+test('a studio subclass can replace the registered page via config', function (): void {
+    config(['oomycache.filament.dashboard.studio_page' => BadgeStudio::class]);
+
+    $panel = app(Panel::class);
+    $panel->plugin(OomycachePlugin::make());
+
+    expect($panel->getPages())->toContain(BadgeStudio::class)
+        ->not->toContain(QueryCacheStudio::class);
+});
+
+test('an invalid studio_page config falls back to the packaged page', function (): void {
+    config(['oomycache.filament.dashboard.studio_page' => 'App\\Filament\\Pages\\Missing']);
+
+    $panel = app(Panel::class);
+    $panel->plugin(OomycachePlugin::make());
+
+    expect($panel->getPages())->toContain(QueryCacheStudio::class);
 });
 
 test('the studio navigation is configurable per panel', function (): void {

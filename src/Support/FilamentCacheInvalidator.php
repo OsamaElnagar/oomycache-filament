@@ -105,17 +105,46 @@ final class FilamentCacheInvalidator
 
     public function handle(Action $action): void
     {
+        $this->flushActionModels($action, true);
+    }
+
+    /**
+     * Explicit escape hatch for relation managers / raw pivot writes that the
+     * core's model-event coverage cannot see. Unlike handle(), a cacheable
+     * model is flushed even when its action name is normally core-handled.
+     * shouldFlush(), model resolution and the failure-safety contract are
+     * unchanged: ordinary action names still do nothing.
+     */
+    public function flushForAction(Action $action, ?Model $record = null): void
+    {
+        $recordClass = $record instanceof Model ? $record::class : null;
+
+        $this->flushActionModels($action, false, $recordClass);
+    }
+
+    /**
+     * @param  class-string<Model>|null  $recordClass  Optional explicit record for relation-manager actions.
+     */
+    private function flushActionModels(Action $action, bool $respectCoreHandles, ?string $recordClass = null): void
+    {
         try {
             if (! $this->shouldFlush($action)) {
                 return;
             }
 
-            $models = array_values(array_filter(
-                $this->resolveModels($action),
-                fn (string $modelClass): bool => ! $this->coreHandles($action, $modelClass),
-            ));
+            $models = $this->resolveModels($action);
+
+            if ($recordClass !== null) {
+                $models[] = $recordClass;
+            }
+
+            $models = array_values(array_unique($models));
 
             foreach ($models as $modelClass) {
+                if ($respectCoreHandles && $this->coreHandles($action, $modelClass)) {
+                    continue;
+                }
+
                 $this->flushModel($modelClass);
             }
         } catch (Throwable $exception) {

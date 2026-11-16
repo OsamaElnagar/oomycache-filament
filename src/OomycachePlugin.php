@@ -30,8 +30,31 @@ final class OomycachePlugin implements Plugin
     public function register(Panel $panel): void
     {
         $panel->pages([
-            QueryCacheStudio::class,
+            $this->studioPageClass(),
         ]);
+    }
+
+    /**
+     * Apps may subclass QueryCacheStudio (e.g. to add navigation methods) and
+     * register that class via config instead of registering a second page.
+     *
+     * @return class-string<QueryCacheStudio>
+     */
+    private function studioPageClass(): string
+    {
+        $configured = config('oomycache.filament.dashboard.studio_page', QueryCacheStudio::class);
+
+        if (
+            is_string($configured)
+            && $configured !== ''
+            && class_exists($configured)
+            && ($configured === QueryCacheStudio::class || is_subclass_of($configured, QueryCacheStudio::class))
+        ) {
+            /** @var class-string<QueryCacheStudio> $configured */
+            return $configured;
+        }
+
+        return QueryCacheStudio::class;
     }
 
     public function boot(Panel $panel): void

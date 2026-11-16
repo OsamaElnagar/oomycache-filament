@@ -5,15 +5,22 @@ declare(strict_types=1);
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Panel;
+use Illuminate\Auth\GenericUser;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
+use Oomycache\Filament\Pages\QueryCacheStudio;
 use Oomycache\Filament\Support\FilamentCacheInvalidator;
 use Oomycache\Filament\Support\FilamentTenantResolver;
 use Oomycache\Filament\Tests\Fixtures\BridgeCacheableRecord;
 use Oomycache\Filament\Tests\Fixtures\BridgeTenant;
 use Oomycache\Filament\Tests\TestCase;
 use Oomycache\Oomycache\Contracts\VersionStore;
+use Oomycache\Oomycache\Events\QueryCacheInvalidated;
 
 uses(TestCase::class);
 
@@ -29,6 +36,21 @@ function fakeFilamentManager(Panel $panel, ?Model $tenant = null): object
         public function getCurrentPanel(): Panel
         {
             return $this->panel;
+        }
+
+        public function getCurrentOrDefaultPanel(): Panel
+        {
+            return $this->panel;
+        }
+
+        public function getAuthGuard(): string
+        {
+            return $this->panel->getAuthGuard();
+        }
+
+        public function auth(): Guard
+        {
+            return auth()->guard($this->panel->getAuthGuard());
         }
 
         public function getTenant(): ?Model
@@ -119,4 +141,88 @@ it('fails closed when panel tenancy is active without a tenant', function (): vo
 
     expect($context->failClosed)->toBeTrue()
         ->and($context->reason)->toBe('filament-tenant-unresolved');
+});
+
+it('recognizes a user authenticated on the current panel guard, not the default guard', function (): void {
+    config([
+        'auth.guards.admin' => ['driver' => 'session', 'provider' => 'users'],
+        'oomycache.filament.dashboard.can_view' => 'oomycache.view',
+    ]);
+    Gate::define('oomycache.view', fn (Authenticatable $user): bool => $user->getAuthIdentifier() === 'panel-admin');
+
+    auth()->guard('web')->setUser(new GenericUser(['id' => 'default-user']));
+    auth()->guard('admin')->setUser(new GenericUser(['id' => 'panel-admin']));
+    Filament::swap(fakeFilamentManager(Panel::make()->id('admin')->path('admin')->authGuard('admin')));
+
+    expect(QueryCacheStudio::canAccess())->toBeTrue();
+
+    auth()->guard('admin')->forgetUser();
+
+    expect(QueryCacheStudio::canAccess())->toBeFalse();
+});
+
+it('authorizes purge through the panel guard while staying deny-by-default', function (): void {
+    config([
+        'auth.guards.admin' => ['driver' => 'session', 'provider' => 'users'],
+        'oomycache.filament.dashboard.can_purge' => 'oomycache.purge',
+    ]);
+    Gate::define('oomycache.purge', fn (Authenticatable $user): bool => $user->getAuthIdentifier() === 'panel-admin');
+
+    auth()->guard('web')->setUser(new GenericUser(['id' => 'default-user']));
+    auth()->guard('admin')->setUser(new GenericUser(['id' => 'panel-admin']));
+    Filament::swap(fakeFilamentManager(Panel::make()->id('admin')->path('admin')->authGuard('admin')));
+
+    expect(QueryCacheStudio::canPurge())->toBeTrue();
+
+    auth()->guard('admin')->forgetUser();
+
+    expect(QueryCacheStudio::canPurge())->toBeFalse();
+
+    auth()->guard('admin')->setUser(new GenericUser(['id' => 'panel-admin']));
+    config(['oomycache.filament.dashboard.can_purge' => null]);
+
+    expect(QueryCacheStudio::canPurge())->toBeFalse();
+});
+
+it('bumps the token exactly once for an explicit flush of a core-handled action', function (): void {
+    Schema::create('bridge_cacheable_records', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+    });
+
+    $record = BridgeCacheableRecord::query()->create(['name' => 'Explicit flush']);
+    $versions = app(VersionStore::class);
+    $connection = $record->getConnection()->getName();
+    $before = $versions->get('bridge_cacheable_records', $connection);
+
+    Event::fake([QueryCacheInvalidated::class]);
+    $invalidator = app(FilamentCacheInvalidator::class);
+
+    // The default path still defers to core events for cacheable models.
+    $invalidator->handle(Action::make('delete')->record($record));
+
+    expect($versions->get('bridge_cacheable_records', $connection))->toBe($before);
+
+    // The explicit escape hatch bypasses coreHandles() exactly once.
+    $invalidator->flushForAction(Action::make('delete')->record($record), $record);
+
+    expect($versions->get('bridge_cacheable_records', $connection))->not->toBe($before);
+
+    Event::assertDispatchedTimes(QueryCacheInvalidated::class, 1);
+});
+
+it('still requires a flush-worthy action name for an explicit flush', function (): void {
+    Schema::create('bridge_cacheable_records', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+    });
+
+    $record = BridgeCacheableRecord::query()->create(['name' => 'View only']);
+    $versions = app(VersionStore::class);
+    $connection = $record->getConnection()->getName();
+    $before = $versions->get('bridge_cacheable_records', $connection);
+
+    app(FilamentCacheInvalidator::class)->flushForAction(Action::make('view')->record($record), $record);
+
+    expect($versions->get('bridge_cacheable_records', $connection))->toBe($before);
 });

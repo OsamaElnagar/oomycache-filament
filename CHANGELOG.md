@@ -1,5 +1,25 @@
 # Release Notes
 
+## 0.1.5 - 2026-11-16
+
+### Added
+
+- Config-driven Query Cache studio navigation badge (`oomycache.filament.dashboard.navigation_badge`):
+  `off` (default), `hit-rate` (success ≥90%, warning ≥70%, danger below), `invalidations` and `models`.
+  Badge values reuse the studio's memoized status/model discovery and do not query the database.
+- `Oomycache\Filament\Support\HasCachedNavigationBadge` trait: `cachedNavigationBadgeCount()` caches a
+  count under `nav-badge:{table}:{scope}` via `Oomycache::rememberQuery()`, bypasses the query cache
+  while counting, and returns `null` for zero counts.
+- Optional `oomycache.filament.dashboard.studio_page` config to register a validated `QueryCacheStudio`
+  subclass instead of the packaged page.
+- `FilamentCacheInvalidator::flushForAction($action, $record)` escape hatch for explicit invalidation
+  of core-handled actions (relation managers, raw pivot writes), with one flush per call.
+
+### Changed
+
+- Studio access (`canAccess`) and purge authorization (`canPurge`) now use the current Filament panel's
+  auth guard and evaluate configured Gates for that panel user. The purge gate remains deny-by-default.
+
 ## 0.1.4 - 2026-11-12
 
 ### Changed

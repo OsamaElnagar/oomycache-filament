@@ -51,11 +51,18 @@ documents the full method and limitations.
   purge action. Filament-components-only markup, so custom panel themes apply unchanged. Set
   `oomycache.filament.dashboard.navigation_label`, `.navigation_group` and `.navigation_sort` to fit
   the host panel's navigation; the group defaults to the panel's default group.
+- **Optional navigation badge** — `oomycache.filament.dashboard.navigation_badge` accepts `off` (default),
+  `hit-rate` (`98%`, coloured success at ≥90%, warning at ≥70%, danger below), `invalidations` (stats counter,
+  info) and `models` (discovered cacheable models, gray). Badge values reuse the studio's memoised
+  status/model discovery and never issue a DB query.
+- **Current-panel guard awareness** — studio access and purge authorization use the active Filament panel's
+  auth guard and evaluate Gates for that user. The purge gate stays deny-by-default.
 - **Event-bypass invalidation** — listens to Filament `ActionCalled` and flushes the affected models
   for associate/dissociate/reorder/import, bulk actions and non-cacheable models, which write through
   query builders / pivot tables without firing Eloquent model events. Standard per-record
   attach/detach/delete/force-delete/restore actions on cacheable models defer to core events so one
-  logical write produces one invalidation.
+  logical write produces one invalidation. `FilamentCacheInvalidator::flushForAction()` is an explicit
+  escape hatch for relation-manager or raw pivot writes the core cannot observe.
 
 ## Screenshots
 
@@ -86,6 +93,55 @@ public function panel(Panel $panel): Panel
 
 Then publish the OoMyCache configuration (in the core package) and add the `HasQueryCache` trait to
 your models.
+
+### Studio configuration
+
+All keys live under `oomycache.filament.dashboard` in the core package's `config/oomycache.php`:
+
+```php
+'dashboard' => [
+    'can_view' => null,                 // optional Gate name
+    'can_purge' => 'oomycache.purge',   // deny-by-default Gate name
+    'navigation_label' => 'Query Cache',
+    'navigation_group' => null,
+    'navigation_sort' => null,
+    'navigation_badge' => 'off',        // off | hit-rate | invalidations | models
+    'studio_page' => null,              // optional class-string subclass of QueryCacheStudio
+],
+```
+
+Set `studio_page` to a `QueryCacheStudio` subclass to add your own navigation methods without
+registering a second page with the same slug; invalid values fall back to the packaged page.
+
+For badges on other pages/resources, use the included trait:
+
+```php
+use Oomycache\Filament\Support\HasCachedNavigationBadge;
+
+public static function getNavigationBadge(): ?string
+{
+    return app(self::class)->cachedNavigationBadgeCount(
+        'orders',                       // dependency table for invalidation
+        'open',                         // stable key scope
+        Order::query()->where('status', 'open'),
+        120,                            // TTL in seconds (default 300)
+    );
+}
+```
+
+It stores the count as `nav-badge:{table}:{scope}` through `Oomycache::rememberQuery()`, bypasses the
+query cache while executing, and returns `null` for zero. Invalidate with `Oomycache::flushTables(['orders'])`.
+
+For relation-manager or raw pivot writes the core cannot observe, call the explicit escape hatch:
+
+```php
+use Oomycache\Filament\Support\FilamentCacheInvalidator;
+
+app(FilamentCacheInvalidator::class)->flushForAction($action, $record);
+```
+
+It flushes the affected cacheable model once, even for `delete`/`attach` actions normally handled by
+core events; ordinary action names still do nothing.
 
 ## For AI agents (Laravel Boost)
 

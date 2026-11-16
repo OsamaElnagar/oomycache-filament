@@ -43,11 +43,19 @@ Then add `HasQueryCache` to the Eloquent models you want cached (in the app, not
 `{panel-path}/query-cache` (e.g. `/admin/query-cache`, or `/query-cache` when the panel path is `''`) shows store status, cacheable models + version tokens, hit/miss/invalidation
 counters (when stats are enabled), selective invalidation and a global purge.
 
-- Page access: authenticated panel users; optionally restrict with
+- Page access: authenticated panel users on the **current Filament panel's auth guard** (not
+  Laravel's default guard); Gates are evaluated for that panel user. Optionally restrict with
   `oomycache.filament.dashboard.can_view` = Gate name.
 - Navigation placement is configurable: `oomycache.filament.dashboard.navigation_label`,
   `.navigation_group` and `.navigation_sort`. The group defaults to the panel default when null;
   do not rely on the page forcing a specific group.
+- Optional navigation badge: `oomycache.filament.dashboard.navigation_badge` = `off` (default),
+  `hit-rate` (hits/(hits+misses) as `98%`; success ≥90%, warning ≥70%, danger below),
+  `invalidations` (stats counter, info) or `models` (count of cacheable models, gray). Values reuse
+  the studio's memoized status/model discovery, so no badge queries the DB.
+- A subclass can be registered through `oomycache.filament.dashboard.studio_page` (must extend
+  `QueryCacheStudio`); invalid values fall back to the packaged page. This avoids a duplicate page
+  slug when adding custom navigation methods.
 - **Destructive actions are deny-by-default.** Set
   `oomycache.filament.dashboard.can_purge` = Gate name and define that gate in the app:
 
@@ -58,6 +66,26 @@ config(['oomycache.filament.dashboard.can_purge' => 'oomycache.purge']);
 
 Without the Gate the invalidate/clear buttons are hidden and the action closures refuse to run.
 
+## Cached navigation badges on other pages
+
+Use `Oomycache\Filament\Support\HasCachedNavigationBadge` for resource/page badges that need a row
+count. It caches the count through `Oomycache::rememberQuery()` and bypasses the query cache while
+counting, so it cannot cache itself:
+
+```php
+use Oomycache\Filament\Support\HasCachedNavigationBadge;
+
+public static function getNavigationBadge(): ?string
+{
+    return app(self::class)->cachedNavigationBadgeCount(
+        'orders', 'open', Order::query()->where('status', 'open'), 120,
+    );
+}
+```
+
+The key is `nav-badge:{table}:{scope}` (tenant/panel-aware via the core resolver); zero returns
+`null`. Invalidate with `Oomycache::flushTables(['orders'])` after writes the cache cannot see.
+
 ## Invalidation coverage
 
 The bridge listens to Filament `ActionCalled` and flushes affected models for
@@ -65,9 +93,21 @@ associate/dissociate/reorder/import, bulk actions and event-bypassing actions on
 Standard per-record attach/detach/delete/force-delete/restore actions on cacheable models defer to
 the core events/pivot relations, so one logical write produces one audit/stats invalidation.
 
-It does **not** cover: raw SQL, `saveQuietly()`, `withoutEvents()`, or non-Filament pivot writes in app
-code. `belongsToMany` pivots on cacheable models are covered by the core package's relation wrapper;
-`morphToMany` and raw pivot writes still need an explicit flush (see the core skill/guardrails).
+It does **not** cover: raw SQL, `saveQuietly()`, `withoutEvents()`, or non-Filament raw pivot writes in
+app code. When a model uses `HasQueryCache`, the core wraps **both** `belongsToMany` and
+`morphToMany` (plus `morphedByMany`) relations, so relation-level attach/detach/sync/toggle writes
+invalidate the related tables. Raw pivot writes, query-builder writes and relation-manager actions
+whose table the core cannot infer still need an explicit flush.
+
+For those cases call the escape hatch (it bypasses the core-handled dedupe but still requires a
+flush-worthy action name, and performs exactly one flush):
+
+```php
+use Oomycache\Filament\Support\FilamentCacheInvalidator;
+
+app(FilamentCacheInvalidator::class)->flushForAction($action, $record);
+// or flush the exact tables: Oomycache::flushTables(['order_tag']);
+```
 
 ## Tenancy
 
