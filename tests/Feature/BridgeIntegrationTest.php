@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Illuminate\Auth\GenericUser;
@@ -225,4 +226,67 @@ it('still requires a flush-worthy action name for an explicit flush', function (
     app(FilamentCacheInvalidator::class)->flushForAction(Action::make('view')->record($record), $record);
 
     expect($versions->get('bridge_cacheable_records', $connection))->toBe($before);
+});
+
+it('flushes a generic bulk action when flush_all_bulk_actions is enabled', function (): void {
+    config(['oomycache.filament.invalidation.flush_all_bulk_actions' => true]);
+
+    Schema::create('bridge_cacheable_records', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+    });
+
+    $record = BridgeCacheableRecord::query()->create(['name' => 'Bulk enabled']);
+    $versions = app(VersionStore::class);
+    $connection = $record->getConnection()->getName();
+    $before = $versions->get('bridge_cacheable_records', $connection);
+
+    // A custom, non-allowlisted bulk name still flushes under the safe default.
+    app(FilamentCacheInvalidator::class)->handle(
+        BulkAction::make('exportSelected')->record($record),
+    );
+
+    expect($versions->get('bridge_cacheable_records', $connection))->not->toBe($before);
+});
+
+it('does not flush a generic bulk action when flush_all_bulk_actions is disabled', function (): void {
+    config(['oomycache.filament.invalidation.flush_all_bulk_actions' => false]);
+
+    Schema::create('bridge_cacheable_records', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+    });
+
+    $record = BridgeCacheableRecord::query()->create(['name' => 'Bulk disabled']);
+    $versions = app(VersionStore::class);
+    $connection = $record->getConnection()->getName();
+    $before = $versions->get('bridge_cacheable_records', $connection);
+
+    app(FilamentCacheInvalidator::class)->handle(
+        BulkAction::make('exportSelected')->record($record),
+    );
+
+    expect($versions->get('bridge_cacheable_records', $connection))->toBe($before);
+});
+
+it('still flushes an allowlisted bulk action when flush_all_bulk_actions is disabled', function (): void {
+    config(['oomycache.filament.invalidation.flush_all_bulk_actions' => false]);
+
+    Schema::create('bridge_cacheable_records', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+    });
+
+    $record = BridgeCacheableRecord::query()->create(['name' => 'Bulk reorder']);
+    $versions = app(VersionStore::class);
+    $connection = $record->getConnection()->getName();
+    $before = $versions->get('bridge_cacheable_records', $connection);
+
+    // reorder is a known write action in FLUSH_AFTER_ACTION_NAMES and is not
+    // deduped by coreHandles(), so the real listener path flushes it.
+    app(FilamentCacheInvalidator::class)->handle(
+        BulkAction::make('reorder')->record($record),
+    );
+
+    expect($versions->get('bridge_cacheable_records', $connection))->not->toBe($before);
 });

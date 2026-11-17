@@ -170,9 +170,15 @@ final class FilamentCacheInvalidator
 
     private function shouldFlush(Action $action): bool
     {
-        // Every bulk action may use the event-bypassing mass branch
-        // (fetchSelectedRecords(false) + getSelectedRecordsQuery()).
-        if ($action instanceof BulkAction) {
+        // Bulk actions may use the event-bypassing mass branch
+        // (fetchSelectedRecords(false) + getSelectedRecordsQuery()). The safe
+        // default flushes for every bulk action; when disabled, only known
+        // write action names flush and custom query-builder bulk actions must
+        // call flushForAction() explicitly.
+        if (
+            $action instanceof BulkAction
+            && config('oomycache.filament.invalidation.flush_all_bulk_actions', true)
+        ) {
             return true;
         }
 

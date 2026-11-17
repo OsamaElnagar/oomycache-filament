@@ -59,10 +59,11 @@ documents the full method and limitations.
   auth guard and evaluate Gates for that user. The purge gate stays deny-by-default.
 - **Event-bypass invalidation** — listens to Filament `ActionCalled` and flushes the affected models
   for associate/dissociate/reorder/import, bulk actions and non-cacheable models, which write through
-  query builders / pivot tables without firing Eloquent model events. Standard per-record
-  attach/detach/delete/force-delete/restore actions on cacheable models defer to core events so one
-  logical write produces one invalidation. `FilamentCacheInvalidator::flushForAction()` is an explicit
-  escape hatch for relation-manager or raw pivot writes the core cannot observe.
+  query builders / pivot tables without firing Eloquent model events. Bulk-action flushing is
+  configurable (safe by default — see [Bulk-action invalidation](#bulk-action-invalidation)). Standard
+  per-record attach/detach/delete/force-delete/restore actions on cacheable models defer to core events
+  so one logical write produces one invalidation. `FilamentCacheInvalidator::flushForAction()` is an
+  explicit escape hatch for relation-manager or raw pivot writes the core cannot observe.
 
 ## Screenshots
 
@@ -113,6 +114,28 @@ All keys live under `oomycache.filament.dashboard` in the core package's `config
 Set `studio_page` to a `QueryCacheStudio` subclass to add your own navigation methods without
 registering a second page with the same slug; invalid values fall back to the packaged page.
 
+### Bulk-action invalidation
+
+Bulk actions may write through query builders (for example `fetchSelectedRecords(false)` with
+`getSelectedRecordsQuery()`) without firing Eloquent model events, so the bridge flushes the affected
+models after them. This is configurable in the core package's `config/oomycache.php`:
+
+```php
+'invalidation' => [
+    'flush_all_bulk_actions' => env('OOMYCACHE_FILAMENT_FLUSH_ALL_BULK_ACTIONS', true),
+],
+```
+
+The safety trade-off:
+
+- **`true` (default) — safest.** Every bulk action flushes, so even custom bulk actions that bypass
+  model events invalidate correctly. The cost is possible over-invalidation (extra flushes / cache
+  thrash).
+- **`false` — fewer flushes.** Only bulk actions whose names are in the bridge's known-write
+  allowlist (`attach`, `associate`, `detach`, `dissociate`, `reorder`, `import`, `delete`,
+  `force-delete`, `restore`) flush. **Custom bulk actions that write via query builders must call
+  `FilamentCacheInvalidator::flushForAction()` explicitly**, or those writes may remain cached.
+
 For badges on other pages/resources, use the included trait:
 
 ```php
@@ -161,6 +184,13 @@ behaviour, and what Filament actions the invalidator covers.
 
 See [`SECURITY.md`](SECURITY.md) for supported versions and private vulnerability reporting. Do not
 open public issues for security reports.
+
+- Bulk-action flushing is configurable via `oomycache.filament.invalidation.flush_all_bulk_actions`
+  (env `OOMYCACHE_FILAMENT_FLUSH_ALL_BULK_ACTIONS`, default `true`). The default is the safe choice: it
+  flushes on every bulk action and may over-invalidate. Setting it to `false` reduces cache thrash but
+  requires custom bulk actions that write via query builders to call
+  `FilamentCacheInvalidator::flushForAction()` explicitly. The deny-by-default `can_purge` gate is
+  unchanged.
 
 ## Contributing
 

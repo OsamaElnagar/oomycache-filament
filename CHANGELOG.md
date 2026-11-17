@@ -1,5 +1,15 @@
 # Release Notes
 
+## 0.1.6 - 2026-11-17
+
+### Added
+
+- Configurable bulk-action invalidation via `oomycache.filament.invalidation.flush_all_bulk_actions`
+  (env `OOMYCACHE_FILAMENT_FLUSH_ALL_BULK_ACTIONS`, default `true`). The safe default flushes on every
+  bulk action; disabling it flushes only known write action names, reducing cache thrash. Custom bulk
+  actions that write via query builders must then call `FilamentCacheInvalidator::flushForAction()`
+  explicitly.
+
 ## 0.1.5 - 2026-11-16
 
 ### Added

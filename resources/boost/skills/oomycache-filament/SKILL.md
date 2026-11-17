@@ -90,8 +90,12 @@ The key is `nav-badge:{table}:{scope}` (tenant/panel-aware via the core resolver
 
 The bridge listens to Filament `ActionCalled` and flushes affected models for
 associate/dissociate/reorder/import, bulk actions and event-bypassing actions on non-cacheable models.
-Standard per-record attach/detach/delete/force-delete/restore actions on cacheable models defer to
-the core events/pivot relations, so one logical write produces one audit/stats invalidation.
+Bulk-action flushing is configurable via `oomycache.filament.invalidation.flush_all_bulk_actions`
+(env `OOMYCACHE_FILAMENT_FLUSH_ALL_BULK_ACTIONS`, default `true`): the safe default flushes on every
+bulk action, while `false` flushes only known write action names and requires custom query-builder
+bulk actions to call `FilamentCacheInvalidator::flushForAction()` explicitly. Standard per-record
+attach/detach/delete/force-delete/restore actions on cacheable models defer to the core events/pivot
+relations, so one logical write produces one audit/stats invalidation.
 
 It does **not** cover: raw SQL, `saveQuietly()`, `withoutEvents()`, or non-Filament raw pivot writes in
 app code. When a model uses `HasQueryCache`, the core wraps **both** `belongsToMany` and
